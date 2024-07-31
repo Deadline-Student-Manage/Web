@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-const Balance = ({ total, budget, onBudgetChange, isEditingBudget, setIsEditingBudget }) => {
+const Balance = ({ total, budget, onBudgetChange, isEditingBudget, setIsEditingBudget, transactions }) => { 
   const [newBudget, setNewBudget] = useState(budget);
 
   const handleBudgetChange = (e) => {
@@ -12,7 +12,15 @@ const Balance = ({ total, budget, onBudgetChange, isEditingBudget, setIsEditingB
     setIsEditingBudget(false); 
   };
 
-  const remainingBudget = budget + total; 
+  // Tính toán chi tiêu và thu nhập riêng
+  const expenses = transactions.reduce((sum, transaction) => 
+    transaction.type === 'expense' ? sum + transaction.amount : sum, 0
+  );
+  const income = transactions.reduce((sum, transaction) => 
+    transaction.type === 'income' ? sum + transaction.amount : sum, 0
+  );
+
+  const remainingBudget = budget - expenses; 
 
   return (
     <div className="bg-white shadow-md rounded px-8 pt-6 pb-8 mt-4">
@@ -48,10 +56,18 @@ const Balance = ({ total, budget, onBudgetChange, isEditingBudget, setIsEditingB
       </div>
       <div className="flex justify-between mb-4">
         <span className="font-bold">Đã chi tiêu:</span>
-        <span className={total < 0 ? 'text-red-500' : 'text-green-500'}>
-          {total} VND
+        <span className="text-red-500">
+          {expenses} VND 
         </span>
       </div>
+
+      <div className="flex justify-between mb-4">
+        <span className="font-bold">Thu nhập:</span>
+        <span className="text-green-500">
+          {income} VND
+        </span>
+      </div>
+
       <hr />
       <div className="flex justify-between mt-4">
         <span className="font-bold">Còn lại:</span>

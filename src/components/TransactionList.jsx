@@ -3,12 +3,15 @@ import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWithinInter
 
 const TransactionList = ({ transactions, selectedView, onDelete }) => {
   const filteredTransactions = transactions.filter((transaction) => {
-    const transactionDate = new Date(transaction.date);
+    const transactionDate = new Date(transaction.date); // Khai báo transactionDate ở đây
 
     if (selectedView === 'all') {
       return true;
+    } else if (selectedView.length === 7 && selectedView.includes('-')) { 
+      const transactionMonth = `${transactionDate.getFullYear()}-${(transactionDate.getMonth() + 1).toString().padStart(2, '0')}`;
+      return transactionMonth === selectedView;
     } else if (selectedView === 'month') {
-      const today = new Date(); // Lấy ngày hiện tại
+      const today = new Date();
       return (
         transactionDate.getMonth() === today.getMonth() &&
         transactionDate.getFullYear() === today.getFullYear()
@@ -22,9 +25,9 @@ const TransactionList = ({ transactions, selectedView, onDelete }) => {
       const today = new Date();
       return transactionDate.getFullYear() === today.getFullYear();
     }
+
     return true; 
   });
-
   return (
     <div>
       <h2 className="text-2xl font-bold mb-4">Danh sách giao dịch</h2>

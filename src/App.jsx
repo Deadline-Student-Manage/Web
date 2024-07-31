@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
+import { format, startOfMonth, endOfMonth, isWithinInterval, startOfWeek, endOfWeek } from 'date-fns';
 import TransactionForm from './components/TransactionForm';
 import TransactionList from './components/TransactionList';
 import Balance from './components/Balance';
-import MonthlyExpenseList from './components/MonthlyExpenseList'; // Component mới
+import MonthlyExpenseList from './components/MonthlyExpenseList';
+import Alert from './components/Alert';
 
 function App() {
   const [transactions, setTransactions] = useState([]);
@@ -11,6 +12,7 @@ function App() {
   const [selectedView, setSelectedView] = useState('month');
   const [isEditingBudget, setIsEditingBudget] = useState(false);
   const [monthlyExpenses, setMonthlyExpenses] = useState({});
+  const [showAlert, setShowAlert] = useState(false); 
 
   useEffect(() => {
     const storedTransactions = localStorage.getItem('transactions');
@@ -31,12 +33,21 @@ function App() {
 
     const transactionMonth = new Date(newTransaction.date).getMonth();
     const transactionYear = new Date(newTransaction.date).getFullYear();
-    const monthKey = `${transactionYear}-${transactionMonth}`; 
+    const monthKey = `${transactionYear}-${transactionMonth}`;
 
     setMonthlyExpenses(prevExpenses => ({
       ...prevExpenses,
       [monthKey]: (prevExpenses[monthKey] || 0) + newTransaction.amount
     }));
+
+    // Kiểm tra ngân sách sau khi thêm giao dịch
+    const newTotal = calculateTotal(selectedView); // Tính toán tổng mới
+    if (newTotal > budget && selectedView !== 'all') {
+      setShowAlert(true);
+      setTimeout(() => {
+        setShowAlert(false);
+      }, 3000);
+    }
   };
 
   const calculateTotal = (period) => {
@@ -73,6 +84,35 @@ function App() {
       }, 0);
   };
 
+  const handleViewChange = (newView) => {
+    setSelectedView(newView);
+
+    if (newView === 'month') {
+      setBudget(1000000); 
+
+      const today = new Date();
+      const currentMonthKey = `${today.getFullYear()}-${today.getMonth()}`;
+      setMonthlyExpenses(prevExpenses => ({
+        ...prevExpenses,
+        [currentMonthKey]: calculateTotal('month')
+      }));
+    }
+
+    // Kiểm tra ngân sách sau khi chuyển đổi chế độ xem
+    const totalExpense = calculateTotal(newView);
+    if (totalExpense > budget && newView !== 'all') {
+      setShowAlert(true);
+      setTimeout(() => {
+        setShowAlert(false);
+      }, 3000);
+    }
+  };
+
+  const handleBudgetChange = (newBudget) => {
+    setBudget(newBudget);
+    setIsEditingBudget(false);
+  };
+
   const handleDeleteTransaction = (id) => {
     setTransactions(transactions.filter(transaction => transaction.id !== id));
   };
@@ -85,26 +125,17 @@ function App() {
     }
   };
 
-  const handleViewChange = (view) => {
-    if (view === 'month') {
-      // Reset ngân sách (hoặc thêm logic để người dùng tự nhập)
-      setBudget(1000000); 
+  // Tạo danh sách tháng đã có chi tiêu
+  const expenseMonths = Array.from(new Set(transactions.map(transaction => {
+    const date = new Date(transaction.date);
+    return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
+  })));
 
-      // Lưu tổng chi tiêu của tháng hiện tại
-      const today = new Date();
-      const currentMonthKey = `${today.getFullYear()}-${today.getMonth()}`;
-      setMonthlyExpenses(prevExpenses => ({
-        ...prevExpenses,
-        [currentMonthKey]: calculateTotal('month')
-      }));
-    }
-    setSelectedView(view);
+  const handleMonthButtonClick = (month) => {
+    setSelectedView(month);
   };
 
-  const handleBudgetChange = (newBudget) => {
-    setBudget(newBudget);
-    setIsEditingBudget(false);
-  };
+  
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-3xl font-bold mb-4">Quản Lý Chi Tiêu</h1>
@@ -126,14 +157,14 @@ function App() {
         >
           Tháng
         </button>
-        <button
-          className={`mr-2 px-4 py-2 rounded-full ${
-            selectedView === 'week' ? 'bg-blue-500 text-white' : 'bg-gray-200'
-          }`}
-          onClick={() => handleViewChange('week')}
-        >
-          Tuần
-        </button>
+        <button 
+    className={`mr-2 px-4 py-2 rounded-full ${
+      selectedView === 'week' ? 'bg-blue-500 text-white' : 'bg-gray-200'
+    }`}
+    onClick={() => handleViewChange('week')}
+  >
+    Tuần
+  </button>
         <button
           className={`px-4 py-2 rounded-full ${
             selectedView === 'year' ? 'bg-blue-500 text-white' : 'bg-gray-200'
@@ -143,23 +174,30 @@ function App() {
           Năm
         </button>
       </div>
-
-      <TransactionList 
-        transactions={transactions} 
-        selectedView={selectedView}
-        onDelete={handleDeleteTransaction} 
-      />
-
-      <button
-        className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-        onClick={handleDeleteAllData}
-      >
-        Xóa tất cả dữ liệu
-      </button>
+      
+      
+      <h2>Lịch sử chi tiêu theo tháng:</h2>
+      <div className="flex flex-wrap mb-4">
+        {expenseMonths.map((month) => (
+          <button
+            key={month}
+            className={`mr-2 mb-2 px-4 py-2 rounded-full ${
+              selectedView === month ? 'bg-blue-500 text-white' : 'bg-gray-200'
+            }`}
+            onClick={() => handleMonthButtonClick(month)}
+          >
+            {month}
+          </button>
+        ))}
+      </div>
 
       <TransactionForm onAddTransaction={addTransaction} />
 
-      <TransactionList transactions={transactions} selectedView={selectedView} />
+      <TransactionList
+        transactions={transactions}
+        selectedView={selectedView} 
+        onDelete={handleDeleteTransaction}
+      />
 
       <Balance
         total={calculateTotal(selectedView)}
@@ -167,9 +205,23 @@ function App() {
         onBudgetChange={handleBudgetChange}
         isEditingBudget={isEditingBudget}
         setIsEditingBudget={setIsEditingBudget}
+        transactions={transactions}
       />
 
-      <MonthlyExpenseList monthlyExpenses={monthlyExpenses} /> 
+      <MonthlyExpenseList monthlyExpenses={monthlyExpenses} />
+
+      <button
+        className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline mt-4"
+        onClick={handleDeleteAllData}
+      >
+        Xóa tất cả dữ liệu
+      </button>
+
+      {showAlert && <Alert message="Bạn đã vượt quá ngân sách!" />}
+
+      <footer className="text-center mt-8 text-gray-600">
+        Created by AndyAnh174 and team 9 Summer Code Camp
+      </footer>
     </div>
   );
 }
