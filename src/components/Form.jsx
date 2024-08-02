@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { format } from 'date-fns';
 
-const TransactionForm = ({ onAddTransaction }) => {
+const Form = ({ onAddTransaction }) => {
   const [date, setDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
@@ -17,7 +17,7 @@ const TransactionForm = ({ onAddTransaction }) => {
       type,
       note,
     });
-    setDate(format(new Date(), 'yyyy-MM-dd'));
+    setDate(format(new Date(), 'yyyy-dd-yy'));
     setDescription('');
     setAmount('');
     setType('expense');
@@ -97,4 +97,4 @@ const TransactionForm = ({ onAddTransaction }) => {
   );
 };
 
-export default TransactionForm;
+export default Form;
