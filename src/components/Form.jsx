@@ -55,11 +55,17 @@ const Form = ({ onAddTransaction }) => {
           Số tiền:
         </label>
         <input
-          type="number"
+          type="text"
           id="amount"
           className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
           value={amount}
-          onChange={(e) => setAmount(e.target.value)}
+          onChange={(e) => {
+            const value = e.target.value;
+            // Lọc chỉ cho phép các ký tự số
+            const numericValue = value.replace(/[^0-9]/g, '');
+            setAmount(numericValue);
+          }}
+          inputMode="numeric"
         />
       </div>
       <div className="mb-4">

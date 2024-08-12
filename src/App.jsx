@@ -4,7 +4,6 @@ import Form from './components/Form';
 import List from './components/List';
 import Balance from './components/Balance';
 import MonthlyList from './components/MonthlyList';
-import Alert from './components/Alert';
 
 function App() {
   const [transactions, setTransactions] = useState([]);
@@ -12,7 +11,6 @@ function App() {
   const [selectedView, setSelectedView] = useState('month');
   const [isEditingBudget, setIsEditingBudget] = useState(false);
   const [monthlyExpenses, setMonthlyExpenses] = useState({});
-  const [showAlert, setShowAlert] = useState(false); 
 
   useEffect(() => {
     const storedTransactions = localStorage.getItem('transactions');
@@ -42,12 +40,7 @@ function App() {
 
     // Kiểm tra ngân sách sau khi thêm giao dịch
     const newTotal = calculateTotal(selectedView);
-    if (newTotal > budget && selectedView !== 'all') {
-      setShowAlert(true);
-      setTimeout(() => {
-        setShowAlert(false);
-      }, 3000);
-    }
+    
   }; 
 
   const calculateTotal = (period) => {
@@ -97,12 +90,7 @@ function App() {
 
     // Kiểm tra ngân sách sau khi chuyển đổi chế độ xem
     const totalExpense = calculateTotal(newView);
-    if (totalExpense > budget && newView !== 'all') {
-      setShowAlert(true);
-      setTimeout(() => {
-        setShowAlert(false);
-      }, 3000);
-    }
+    
   };
 
   const handleBudgetChange = (newBudget) => {
@@ -120,6 +108,16 @@ function App() {
       setMonthlyExpenses({});
       localStorage.removeItem('transactions');
     }
+    setTransactions([]);
+  };
+
+  const handleDeleteLastExpense = () => {
+    setTransactions(prevTransactions => {
+      if (prevTransactions.length > 0) {
+        return prevTransactions.slice(0, -1); 
+      }
+      return prevTransactions; 
+    });
   };
 
   // Tạo danh sách tháng đã có chi tiêu
@@ -204,12 +202,12 @@ function App() {
   />
 
 <Balance
-  total={calculateTotal(selectedView)}
   budget={budget}
+  transactions={transactions}
   onBudgetChange={handleBudgetChange}
   isEditingBudget={isEditingBudget}
   setIsEditingBudget={setIsEditingBudget}
-  transactions={transactions}
+  onDeleteExpense={handleDeleteLastExpense} 
 />
 
 <MonthlyList monthlyExpenses={monthlyExpenses} />
@@ -221,7 +219,6 @@ function App() {
   Xóa tất cả dữ liệu
 </button>
 
-{showAlert && <Alert message="Bạn đã vượt quá ngân sách!" />}
 
 <footer className="text-center mt-8 text-gray-600">
   Created by AndyAnh174 and team 9 Summer Code Camp

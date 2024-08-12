@@ -1,7 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
-const Balance = ({ total, budget, onBudgetChange, isEditingBudget, setIsEditingBudget, transactions }) => { 
+const Balance = ({ total, budget, onBudgetChange, isEditingBudget, setIsEditingBudget, transactions, onDeleteExpense }) => { 
   const [newBudget, setNewBudget] = useState(budget);
+  const [isOverBudget, setIsOverBudget] = useState(false);
+  const [totalExpenses, setTotalExpenses] = useState(0);
+  const [income, setIncome] = useState(0); 
 
   const handleBudgetChange = (e) => {
     setNewBudget(parseFloat(e.target.value) || 0);
@@ -12,19 +15,87 @@ const Balance = ({ total, budget, onBudgetChange, isEditingBudget, setIsEditingB
     setIsEditingBudget(false); 
   };
 
-  // Tính toán chi tiêu và thu nhập riêng
-  const expenses = transactions.reduce((sum, transaction) => 
-    transaction.type === 'expense' ? sum + transaction.amount : sum, 0
-  );
-  const income = transactions.reduce((sum, transaction) => 
-    transaction.type === 'income' ? sum + transaction.amount : sum, 0
-  );
+  const handleContinue = () => {
+    setIsOverBudget(false); // Đóng cảnh báo nhưng không xóa chi tiêu
+  };
 
-  const remainingBudget = budget - expenses; 
+  const handleDeleteExpenses = () => {
+    onDeleteExpense(); // Gọi hàm xóa tất cả các chi tiêu
+    setIsOverBudget(false); // Đóng cảnh báo sau khi xóa
+  };
+
+  useEffect(() => {
+    const total = transactions.reduce((sum, transaction) => 
+      transaction.type === 'expense' ? sum + transaction.amount : sum, 0
+    );
+    setTotalExpenses(total);
+
+    const totalIncome = transactions.reduce((sum, transaction) => 
+      transaction.type === 'income' ? sum + transaction.amount : sum, 0
+    );
+    setIncome(totalIncome);
+
+    if (total > budget) {
+      setIsOverBudget(true);
+    } else {
+      setIsOverBudget(false);
+    }
+  }, [transactions, budget]);
+
+  const remainingBudget = budget - totalExpenses;
 
   return (
-    <div className="bg-white shadow-md rounded px-8 pt-6 pb-8 mt-4">
+    <div className="bg-white shadow-md rounded px-8 pt-6 pb-8 mt-4 relative">
       <h2 className="text-2xl font-bold mb-4">Tổng quan</h2>
+      {isOverBudget && (
+        <div style={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          backgroundColor: 'rgba(255, 0, 0, 0.8)',
+          color: 'white',
+          padding: '20px',
+          borderRadius: '8px',
+          zIndex: 1000,
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}>
+          <span style={{ fontWeight: 'bold', fontSize: '18px', marginBottom: '10px' }}>
+            Cảnh báo: Bạn đã chi tiêu vượt quá ngân sách!
+          </span>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button
+              onClick={handleContinue}
+              style={{
+                padding: '10px 20px',
+                backgroundColor: '#4CAF50',
+                color: 'white',
+                border: 'none',
+                borderRadius: '5px',
+                cursor: 'pointer'
+              }}
+            >
+              Tiếp tục
+            </button>
+            <button
+              onClick={handleDeleteExpenses}
+              style={{
+                padding: '10px 20px',
+                backgroundColor: '#f44336',
+                color: 'white',
+                border: 'none',
+                borderRadius: '5px',
+                cursor: 'pointer'
+              }}
+            >
+              Xóa chi tiêu
+            </button>
+          </div>
+        </div>
+      )}
       <div className="flex justify-between mb-4">
         <span className="font-bold">Ngân sách:</span>
         {isEditingBudget ? ( 
@@ -57,7 +128,7 @@ const Balance = ({ total, budget, onBudgetChange, isEditingBudget, setIsEditingB
       <div className="flex justify-between mb-4">
         <span className="font-bold">Đã chi tiêu:</span>
         <span className="text-red-500">
-          {expenses} VND 
+          {totalExpenses} VND 
         </span>
       </div>
 
